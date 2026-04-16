@@ -1,0 +1,41 @@
+# ============================================
+# Docker Ignore File
+# ============================================
+
+# Git
+.git
+.gitignore
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Build artifacts (sẽ được build trong container)
+target/
+build/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.*
+
+# Documentation
+*.md
+!README.md
+
+# Docker files (tránh recursion)
+Dockerfile*
+docker-compose*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dang nhap | Realtime Chat</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="auth-page">
+<div class="grain"></div>
+<main class="auth-card">
+    <h1>Realtime Chat</h1>
+    <p class="auth-subtitle">Dang nhap de bat dau chat 1-1</p>
+
+    <div class="notice notice-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+    <div class="notice notice-info" th:if="${infoMessage}" th:text="${infoMessage}"></div>
+
+    <form th:action="@{/login}" method="post" class="auth-form">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" maxlength="30" required autofocus>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" minlength="6" maxlength="72" required>
+
+        <button type="submit">Dang nhap</button>
+    </form>
+
+    <p class="auth-switch">
+        Chua co tai khoan?
+        <a th:href="@{/register}">Dang ky ngay</a>
+    </p>
+</main>
+</body>
+</html>
