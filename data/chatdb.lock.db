@@ -1,0 +1,6 @@
+#FileLock
+#Thu Apr 16 21:47:57 GMT+07:00 2026
+hostName=192.168.1.6
+id=19d96c3549242e8dfbfd81ce5399d415ba8da40d3d4
+method=file
+server=192.168.1.6\:63233

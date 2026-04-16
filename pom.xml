@@ -21,6 +21,7 @@
 
     <properties>
         <java.version>11</java.version>
+        <start-class>com.chat.ChatApplication</start-class>
     </properties>
 
     <dependencies>
