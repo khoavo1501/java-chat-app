@@ -6,6 +6,7 @@ import java.util.List;
 public class UserProfileResponse {
 
     private String username;
+    private boolean active;
     private boolean online;
     private String theme;
     private List<String> roles = new ArrayList<>();
@@ -18,6 +19,14 @@ public class UserProfileResponse {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public boolean isOnline() {

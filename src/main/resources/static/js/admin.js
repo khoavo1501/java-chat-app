@@ -75,7 +75,9 @@
 
         const meta = document.createElement("div");
         meta.className = "admin-card-meta";
-        meta.textContent = (user.online ? "Đang hoạt động" : "Ngoại tuyến") + " • giao diện: " + (user.theme || "aurora");
+        meta.textContent = (user.active ? "Tai khoan dang hoat dong" : "Tai khoan da bi vo hieu hoa")
+            + " • " + (user.online ? "Dang online" : "Ngoai tuyen")
+            + " • giao dien: " + (user.theme || "aurora");
 
         const roles = document.createElement("div");
         roles.className = "tag-list";
@@ -88,6 +90,14 @@
 
         const actions = document.createElement("div");
         actions.className = "card-actions wrap";
+
+        const statusToggle = document.createElement("button");
+        statusToggle.type = "button";
+        statusToggle.className = "ghost-mini";
+        statusToggle.textContent = user.active ? "Vo hieu hoa tai khoan" : "Khoi phuc tai khoan";
+        statusToggle.addEventListener("click", function () {
+            updateAccountStatus(user.username, !user.active);
+        });
 
         const adminToggle = document.createElement("button");
         adminToggle.type = "button";
@@ -109,12 +119,14 @@
         forceOffline.type = "button";
         forceOffline.className = "ghost-mini";
         forceOffline.textContent = "Buộc ngoại tuyến";
+        forceOffline.disabled = !user.active;
         forceOffline.addEventListener("click", function () {
             apiPost("/api/admin/users/" + encodeURIComponent(user.username) + "/force-offline", {})
                 .then(loadUsers)
                 .catch(handleError);
         });
 
+        actions.appendChild(statusToggle);
         actions.appendChild(adminToggle);
         actions.appendChild(themeReset);
         actions.appendChild(forceOffline);
@@ -137,6 +149,14 @@
     function updateTheme(username, theme) {
         apiPatch("/api/admin/users/" + encodeURIComponent(username) + "/theme", {
             theme: theme
+        })
+            .then(loadUsers)
+            .catch(handleError);
+    }
+
+    function updateAccountStatus(username, active) {
+        apiPatch("/api/admin/users/" + encodeURIComponent(username) + "/status", {
+            active: active
         })
             .then(loadUsers)
             .catch(handleError);

@@ -19,6 +19,8 @@ public class UserAccount {
 
     private String passwordHash;
 
+    private Boolean active;
+
     private boolean online;
 
     private String theme;
@@ -69,6 +71,14 @@ public class UserAccount {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public boolean isActive() {
+        return active == null || Boolean.TRUE.equals(active);
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 
     public boolean isOnline() {

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.chat.dto.GroupResponse;
 import com.chat.entity.GroupRoom;
+import com.chat.entity.UserAccount;
 import com.chat.repository.GroupRoomRepository;
 
 @Service
@@ -32,6 +33,7 @@ public class GroupService {
     }
 
     public GroupResponse createGroup(String ownerUsername, String rawName, boolean autoApproveJoin) {
+        UserAccount owner = userService.requireActiveUser(ownerUsername);
         String name = normalizeName(rawName);
         if (name.length() < 3 || name.length() > 80) {
             throw new IllegalArgumentException("Ten nhom phai dai tu 3 den 80 ky tu.");
@@ -40,17 +42,17 @@ public class GroupService {
         GroupRoom groupRoom = new GroupRoom();
         groupRoom.setGroupCode(generateUniqueCode());
         groupRoom.setName(name);
-        groupRoom.setOwnerUsername(normalizeUsername(ownerUsername));
+        groupRoom.setOwnerUsername(owner.getUsername());
         groupRoom.setAutoApproveJoin(autoApproveJoin);
-        groupRoom.addMember(normalizeUsername(ownerUsername));
+        groupRoom.addMember(owner.getUsername());
         groupRoom.touchForCreate();
 
         return toResponse(groupRoomRepository.save(groupRoom));
     }
 
     public GroupResponse joinGroup(String username, String groupCode) {
+        String cleanUsername = userService.requireActiveUser(username).getUsername();
         GroupRoom groupRoom = requireGroup(groupCode);
-        String cleanUsername = normalizeUsername(username);
 
         if (groupRoom.getMemberUsernames().contains(cleanUsername)) {
             return toResponse(groupRoom);
@@ -80,17 +82,13 @@ public class GroupService {
 
     public GroupResponse inviteMember(String actorUsername, String groupCode, String invitedUsername) {
         GroupRoom groupRoom = requireGroup(groupCode);
-        String actor = normalizeUsername(actorUsername);
-        String invited = normalizeUsername(invitedUsername);
+        String actor = userService.requireActiveUser(actorUsername).getUsername();
+        String invited = userService.requireActiveUser(invitedUsername).getUsername();
 
         assertCanManageGroup(actor, groupRoom);
 
         if (groupRoom.getMemberUsernames().contains(invited)) {
             return toResponse(groupRoom);
-        }
-
-        if (!userService.existsByUsername(invited)) {
-            throw new IllegalArgumentException("Nguoi dung duoc moi khong ton tai.");
         }
 
         if (groupRoom.isAutoApproveJoin()) {
@@ -117,9 +115,10 @@ public class GroupService {
 
     public GroupResponse approveMember(String actorUsername, String groupCode, String username) {
         GroupRoom groupRoom = requireGroup(groupCode);
-        assertCanManageGroup(normalizeUsername(actorUsername), groupRoom);
+        String actor = userService.requireActiveUser(actorUsername).getUsername();
+        assertCanManageGroup(actor, groupRoom);
 
-        String cleanUsername = normalizeUsername(username);
+        String cleanUsername = userService.requireActiveUser(username).getUsername();
         if (!groupRoom.getPendingUsernames().contains(cleanUsername)) {
             throw new IllegalArgumentException("Nguoi dung khong nam trong danh sach cho duyet.");
         }
@@ -128,7 +127,6 @@ public class GroupService {
         groupRoom.touchForUpdate();
         GroupRoom saved = groupRoomRepository.save(groupRoom);
 
-        String actor = normalizeUsername(actorUsername);
         if (!cleanUsername.equals(actor)) {
             notificationService.sendToUser(
                     cleanUsername,
@@ -144,21 +142,37 @@ public class GroupService {
 
     public GroupResponse toggleAutoApprove(String actorUsername, String groupCode, boolean autoApproveJoin) {
         GroupRoom groupRoom = requireGroup(groupCode);
-        assertCanManageGroup(normalizeUsername(actorUsername), groupRoom);
+        String actor = userService.requireActiveUser(actorUsername).getUsername();
+        assertCanManageGroup(actor, groupRoom);
         groupRoom.setAutoApproveJoin(autoApproveJoin);
         groupRoom.touchForUpdate();
         return toResponse(groupRoomRepository.save(groupRoom));
     }
 
     public List<GroupResponse> listGroupsForUser(String username) {
-        return groupRoomRepository.findByMemberUsernamesContainingOrderByCreatedAtDesc(normalizeUsername(username))
+        UserAccount requester = userService.requireActiveUser(username);
+
+        return groupRoomRepository.findByMemberUsernamesContainingOrderByCreatedAtDesc(requester.getUsername())
                 .stream()
-                .map(this::toResponse)
-                .collect(java.util.stream.Collectors.toList());
+                .map(group -> requester.hasRole("ADMIN")
+                        ? toResponse(group)
+                        : toResponseForRegularUser(group, requester.getUsername()))
+                .collect(Collectors.toList());
     }
 
     public GroupResponse getGroup(String groupCode) {
         return toResponse(requireGroup(groupCode));
+    }
+
+    public GroupResponse getGroupForUser(String username, String groupCode) {
+        UserAccount requester = userService.requireActiveUser(username);
+        GroupRoom group = requireGroup(groupCode);
+
+        if (requester.hasRole("ADMIN")) {
+            return toResponse(group);
+        }
+
+        return toResponseForRegularUser(group, requester.getUsername());
     }
 
     public List<String> getMemberUsernames(String groupCode) {
@@ -198,6 +212,7 @@ public class GroupService {
     }
 
     public void requireMember(String username, String groupCode) {
+        userService.requireActiveUser(username);
         GroupRoom groupRoom = requireGroup(groupCode);
         if (!groupRoom.getMemberUsernames().contains(normalizeUsername(username))) {
             throw new IllegalArgumentException("Ban khong phai thanh vien cua nhom nay.");
@@ -227,6 +242,27 @@ public class GroupService {
         response.setPendingUsernames(new ArrayList<>(groupRoom.getPendingUsernames()));
         response.setAutoApproveJoin(groupRoom.isAutoApproveJoin());
         response.setCreatedAt(groupRoom.getCreatedAt());
+        return response;
+    }
+
+    private GroupResponse toResponseForRegularUser(GroupRoom groupRoom, String requesterUsername) {
+        GroupResponse response = toResponse(groupRoom);
+
+        if (!userService.isVisibleToRegularUsers(response.getOwnerUsername())
+                && !response.getOwnerUsername().equals(requesterUsername)) {
+            response.setOwnerUsername("tai-khoan-an");
+        }
+
+        response.setMemberUsernames(response.getMemberUsernames()
+                .stream()
+                .filter(username -> username.equals(requesterUsername) || userService.isVisibleToRegularUsers(username))
+                .collect(Collectors.toList()));
+
+        response.setPendingUsernames(response.getPendingUsernames()
+                .stream()
+                .filter(userService::isVisibleToRegularUsers)
+                .collect(Collectors.toList()));
+
         return response;
     }
 

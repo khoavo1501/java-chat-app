@@ -25,6 +25,7 @@ public class BootstrapDataConfig {
                 UserAccount admin = new UserAccount();
                 admin.setUsername(adminUsername);
                 admin.setPasswordHash(passwordEncoder.encode(adminPassword));
+                admin.setActive(true);
                 admin.setOnline(false);
                 admin.setTheme("midnight");
                 admin.addRole("USER");

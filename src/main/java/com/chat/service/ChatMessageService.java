@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.chat.dto.ChatMessageResponse;
 import com.chat.entity.ChatMessage;
 import com.chat.entity.GroupRoom;
+import com.chat.entity.UserAccount;
 import com.chat.repository.ChatMessageRepository;
 import com.chat.repository.GroupRoomRepository;
 import com.chat.repository.UserAccountRepository;
@@ -21,13 +22,16 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserAccountRepository userAccountRepository;
     private final GroupRoomRepository groupRoomRepository;
+    private final UserService userService;
 
     public ChatMessageService(ChatMessageRepository chatMessageRepository,
             UserAccountRepository userAccountRepository,
-            GroupRoomRepository groupRoomRepository) {
+            GroupRoomRepository groupRoomRepository,
+            UserService userService) {
         this.chatMessageRepository = chatMessageRepository;
         this.userAccountRepository = userAccountRepository;
         this.groupRoomRepository = groupRoomRepository;
+        this.userService = userService;
     }
 
     public ChatMessageResponse savePrivateMessage(String sender, String recipient, String content,
@@ -42,6 +46,13 @@ public class ChatMessageService {
 
         if (cleanRecipient.isEmpty()) {
             throw new IllegalArgumentException("Nguoi nhan khong hop le.");
+        }
+
+        UserAccount senderUser = userService.requireActiveUser(cleanSender);
+        UserAccount recipientUser = userService.requireActiveUser(cleanRecipient);
+
+        if (!senderUser.hasRole("ADMIN") && !userService.isVisibleToRegularUsers(recipientUser.getUsername())) {
+            throw new IllegalArgumentException("Nguoi nhan khong ton tai.");
         }
 
         if (!userAccountRepository.existsByUsername(cleanRecipient)) {

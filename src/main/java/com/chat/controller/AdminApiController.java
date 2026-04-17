@@ -1,5 +1,6 @@
 package com.chat.controller;
 
+import java.security.Principal;
 import java.util.List;
 
 import javax.validation.Valid;
@@ -94,6 +95,24 @@ public class AdminApiController {
         return userService.getProfile(username);
     }
 
+    @PatchMapping("/users/{username}/status")
+    public UserProfileResponse updateAccountStatus(@PathVariable("username") String username,
+            @RequestBody(required = false) AccountStatusRequest request,
+            Principal principal) {
+        if (principal == null) {
+            throw new IllegalArgumentException("Nguoi dung chua dang nhap.");
+        }
+
+        boolean active = request == null || request.isActive();
+        UserProfileResponse response = userService.updateAccountStatus(principal.getName(), username, active);
+
+        if (!active) {
+            presenceService.forceOffline(username);
+        }
+
+        return response;
+    }
+
     @PostMapping("/users/{username}/force-offline")
     public ResponseEntity<Void> forceOffline(@PathVariable("username") String username) {
         presenceService.forceOffline(username);
@@ -109,6 +128,18 @@ public class AdminApiController {
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+    }
+
+    public static class AccountStatusRequest {
+        private boolean active = true;
+
+        public boolean isActive() {
+            return active;
+        }
+
+        public void setActive(boolean active) {
+            this.active = active;
         }
     }
 }

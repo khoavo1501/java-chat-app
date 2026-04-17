@@ -33,7 +33,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         return User.withUsername(userAccount.getUsername())
                 .password(userAccount.getPasswordHash())
-                .roles(roles.toArray(new String[0]))
+                .disabled(!userAccount.isActive())
+                .roles(roles.toArray(String[]::new))
                 .build();
     }
 }

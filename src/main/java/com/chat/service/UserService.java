@@ -19,7 +19,6 @@ import com.chat.repository.UserAccountRepository;
 
 @Service
 public class UserService {
-
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_-]{3,30}$");
     private static final Pattern THEME_PATTERN = Pattern.compile("^[A-Za-z0-9_-]{3,32}$");
     private static final Set<String> ALLOWED_THEMES = new LinkedHashSet<>(Arrays.asList(
@@ -53,6 +52,7 @@ public class UserService {
         UserAccount user = new UserAccount();
         user.setUsername(username);
         user.setPasswordHash(passwordEncoder.encode(password));
+        user.setActive(true);
         user.setOnline(false);
         user.setTheme(defaultTheme());
         user.addRole("USER");
@@ -63,7 +63,7 @@ public class UserService {
     public List<UserPresenceResponse> getAllPresence() {
         return userAccountRepository.findAllByOrderByUsernameAsc()
                 .stream()
-                .filter(user -> !user.hasRole("ADMIN"))
+                .filter(this::isVisibleToRegularUsers)
                 .map(user -> new UserPresenceResponse(
                         user.getUsername(),
                         user.isOnline(),
@@ -79,13 +79,22 @@ public class UserService {
     }
 
     public UserProfileResponse getProfile(String username) {
-        return toProfileResponse(requireUser(username));
+        UserAccount currentUser = requireUser(username);
+        UserProfileResponse response = toProfileResponse(currentUser);
+
+        if (!currentUser.hasRole("ADMIN")) {
+            response.setFriends(filterVisibleUsernames(response.getFriends()));
+            response.setIncomingFriendRequests(filterVisibleUsernames(response.getIncomingFriendRequests()));
+        }
+
+        return response;
     }
 
     public void updateOnline(String username, boolean online) {
         userAccountRepository.findByUsername(normalizeUsername(username)).ifPresent(user -> {
-            if (user.isOnline() != online) {
-                user.setOnline(online);
+            boolean nextOnline = user.isActive() ? online : false;
+            if (user.isOnline() != nextOnline) {
+                user.setOnline(nextOnline);
                 user.touchForUpdate();
                 userAccountRepository.save(user);
             }
@@ -111,8 +120,12 @@ public class UserService {
             throw new IllegalArgumentException("Khong the them chinh minh.");
         }
 
-        UserAccount requesterUser = requireUser(requester);
-        UserAccount targetUser = requireUser(target);
+        UserAccount requesterUser = requireActiveUser(requester);
+        UserAccount targetUser = requireActiveUser(target);
+
+        if (!isVisibleToRegularUsers(targetUser) && !requesterUser.hasRole("ADMIN")) {
+            throw new IllegalArgumentException("Nguoi dung khong ton tai.");
+        }
 
         if (requesterUser.getFriends().contains(targetUser.getUsername())) {
             throw new IllegalArgumentException("Da la ban be.");
@@ -136,8 +149,8 @@ public class UserService {
     }
 
     public void acceptFriendRequest(String username, String requesterUsername) {
-        UserAccount currentUser = requireUser(username);
-        UserAccount requesterUser = requireUser(requesterUsername);
+        UserAccount currentUser = requireActiveUser(username);
+        UserAccount requesterUser = requireActiveUser(requesterUsername);
 
         if (!currentUser.getIncomingFriendRequests().contains(requesterUser.getUsername())) {
             throw new IllegalArgumentException("Khong co yeu cau ket ban phu hop.");
@@ -204,8 +217,49 @@ public class UserService {
         userAccountRepository.save(user);
     }
 
+    public UserProfileResponse updateAccountStatus(String actorUsername, String targetUsername, boolean active) {
+        String actor = normalizeUsername(actorUsername);
+        UserAccount target = requireUser(targetUsername);
+
+        if (!active && target.getUsername().equals(actor)) {
+            throw new IllegalArgumentException("Khong the tu vo hieu hoa tai khoan cua chinh minh.");
+        }
+
+        if (!active && target.hasRole("ADMIN")) {
+            throw new IllegalArgumentException("Khong the vo hieu hoa tai khoan ADMIN.");
+        }
+
+        target.setActive(active);
+        if (!active) {
+            target.setOnline(false);
+        }
+
+        target.touchForUpdate();
+        return toProfileResponse(userAccountRepository.save(target));
+    }
+
     public boolean existsByUsername(String username) {
         return userAccountRepository.existsByUsername(normalizeUsername(username));
+    }
+
+    public UserAccount requireActiveUser(String username) {
+        UserAccount user = requireUser(username);
+        if (!user.isActive()) {
+            throw new IllegalArgumentException("Tai khoan da bi vo hieu hoa.");
+        }
+
+        return user;
+    }
+
+    public boolean isVisibleToRegularUsers(String username) {
+        String cleanUsername = normalizeUsername(username);
+        if (cleanUsername.isEmpty()) {
+            return false;
+        }
+
+        return userAccountRepository.findByUsername(cleanUsername)
+                .map(this::isVisibleToRegularUsers)
+                .orElse(false);
     }
 
     public boolean isAdmin(String username) {
@@ -240,12 +294,26 @@ public class UserService {
     private UserProfileResponse toProfileResponse(UserAccount user) {
         UserProfileResponse response = new UserProfileResponse();
         response.setUsername(user.getUsername());
-        response.setOnline(user.isOnline());
+        response.setActive(user.isActive());
+        response.setOnline(user.isActive() && user.isOnline());
         response.setTheme(safeTheme(user.getTheme()));
         response.setRoles(new ArrayList<>(user.getRoles()));
         response.setFriends(new ArrayList<>(user.getFriends()));
         response.setIncomingFriendRequests(new ArrayList<>(user.getIncomingFriendRequests()));
         return response;
+    }
+
+    private boolean isVisibleToRegularUsers(UserAccount user) {
+        return user != null && user.isActive() && !user.hasRole("ADMIN");
+    }
+
+    private List<String> filterVisibleUsernames(List<String> usernames) {
+        return usernames
+                .stream()
+                .map(this::normalizeUsername)
+                .filter(username -> !username.isEmpty())
+                .filter(this::isVisibleToRegularUsers)
+                .collect(Collectors.toList());
     }
 
     private UserAccount requireUser(String username) {
