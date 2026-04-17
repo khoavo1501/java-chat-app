@@ -2,6 +2,7 @@ package com.chat.controller;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +32,7 @@ public class AuthController {
         if (authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
-            return "redirect:/chat";
+            return "redirect:" + resolveAuthenticatedHome(authentication);
         }
 
         if (error != null) {
@@ -54,7 +55,7 @@ public class AuthController {
         if (authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken)) {
-            return "redirect:/chat";
+            return "redirect:" + resolveAuthenticatedHome(authentication);
         }
         return "register";
     }
@@ -75,5 +76,13 @@ public class AuthController {
             model.addAttribute("username", username);
             return "register";
         }
+    }
+
+    private String resolveAuthenticatedHome(Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("ROLE_ADMIN"::equals);
+        return isAdmin ? "/admin/dashboard" : "/chat";
     }
 }

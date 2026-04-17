@@ -30,10 +30,14 @@ public class UserService {
 
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
-    public UserService(UserAccountRepository userAccountRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserAccountRepository userAccountRepository,
+            PasswordEncoder passwordEncoder,
+            NotificationService notificationService) {
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.notificationService = notificationService;
     }
 
     public UserAccount register(String rawUsername, String rawPassword) {
@@ -59,11 +63,11 @@ public class UserService {
     public List<UserPresenceResponse> getAllPresence() {
         return userAccountRepository.findAllByOrderByUsernameAsc()
                 .stream()
+                .filter(user -> !user.hasRole("ADMIN"))
                 .map(user -> new UserPresenceResponse(
                         user.getUsername(),
                         user.isOnline(),
-                        safeTheme(user.getTheme()),
-                        user.hasRole("ADMIN")))
+                        safeTheme(user.getTheme())))
                 .collect(Collectors.toList());
     }
 
@@ -121,6 +125,14 @@ public class UserService {
         targetUser.addIncomingFriendRequest(requesterUser.getUsername());
         targetUser.touchForUpdate();
         userAccountRepository.save(targetUser);
+
+        notificationService.sendToUser(
+                targetUser.getUsername(),
+                "FRIEND_REQUEST",
+                "Yeu cau ket ban moi",
+                requesterUser.getUsername() + " da gui yeu cau ket ban cho ban.",
+                requesterUser.getUsername(),
+                null);
     }
 
     public void acceptFriendRequest(String username, String requesterUsername) {
@@ -139,6 +151,14 @@ public class UserService {
 
         userAccountRepository.save(currentUser);
         userAccountRepository.save(requesterUser);
+
+        notificationService.sendToUser(
+                requesterUser.getUsername(),
+                "FRIEND_REQUEST_APPROVED",
+                "Yeu cau ket ban duoc duyet",
+                currentUser.getUsername() + " da chap nhan loi moi ket ban cua ban.",
+                currentUser.getUsername(),
+                null);
     }
 
     public void rejectFriendRequest(String username, String requesterUsername) {
@@ -190,6 +210,31 @@ public class UserService {
 
     public boolean isAdmin(String username) {
         return requireUser(username).hasRole("ADMIN");
+    }
+
+    public long countAllUsers() {
+        return userAccountRepository.count();
+    }
+
+    public long countOnlineUsers() {
+        return userAccountRepository.findAllByOrderByUsernameAsc()
+                .stream()
+                .filter(UserAccount::isOnline)
+                .count();
+    }
+
+    public long countAdminUsers() {
+        return userAccountRepository.findAllByOrderByUsernameAsc()
+                .stream()
+                .filter(user -> user.hasRole("ADMIN"))
+                .count();
+    }
+
+    public long countPendingFriendRequests() {
+        return userAccountRepository.findAllByOrderByUsernameAsc()
+                .stream()
+                .mapToLong(user -> user.getIncomingFriendRequests().size())
+                .sum();
     }
 
     private UserProfileResponse toProfileResponse(UserAccount user) {

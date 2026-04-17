@@ -19,14 +19,44 @@ public class AdminPageController {
     }
 
     @GetMapping("/admin")
-    public String adminPage(Principal principal, Model model) {
+    public String adminEntryPage() {
+        return "redirect:/admin/dashboard";
+    }
+
+    @GetMapping("/admin/dashboard")
+    public String adminDashboardPage(Principal principal, Model model) {
         if (principal == null) {
             return "redirect:/login";
         }
 
+        applyCommonAttributes(principal, model, "dashboard");
+        return "admin-dashboard";
+    }
+
+    @GetMapping("/admin/users")
+    public String adminUsersPage(Principal principal, Model model) {
+        if (principal == null) {
+            return "redirect:/login";
+        }
+
+        applyCommonAttributes(principal, model, "users");
+        return "admin";
+    }
+
+    @GetMapping("/admin/groups")
+    public String adminGroupsPage(Principal principal, Model model) {
+        if (principal == null) {
+            return "redirect:/login";
+        }
+
+        applyCommonAttributes(principal, model, "groups");
+        return "admin-groups";
+    }
+
+    private void applyCommonAttributes(Principal principal, Model model, String currentPage) {
         UserProfileResponse profile = userService.getProfile(principal.getName());
         model.addAttribute("currentUser", profile.getUsername());
         model.addAttribute("currentTheme", profile.getTheme());
-        return "admin";
+        model.addAttribute("currentPage", currentPage);
     }
 }

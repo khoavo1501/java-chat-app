@@ -18,7 +18,7 @@
         <div class="workspace-actions">
             <a class="ghost-button" th:href="@{/chat}">Trở lại chat</a>
             <a class="ghost-button" th:href="@{/groups}">Quản lý nhóm</a>
-            <a th:if="${isAdmin}" class="ghost-button" th:href="@{/admin}">Admin</a>
+            <a th:if="${isAdmin}" class="ghost-button" th:href="@{/admin/dashboard}">Admin</a>
             <form th:action="@{/logout}" method="post">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <button type="submit" class="ghost-button">Đăng xuất</button>

@@ -10,6 +10,13 @@
 
     const refs = {
         layout: document.querySelector(".chat-layout"),
+        composerShell: document.querySelector(".composer-shell"),
+        topbarTools: document.getElementById("topbarTools"),
+        notificationToggle: document.getElementById("notificationToggle"),
+        notificationBadge: document.getElementById("notificationBadge"),
+        notificationPanel: document.getElementById("notificationPanel"),
+        notificationList: document.getElementById("notificationList"),
+        notificationToasts: document.getElementById("notificationToasts"),
         sidebar: document.getElementById("chatSidebar"),
         sidebarToggle: document.getElementById("sidebarToggle"),
         sidebarBackdrop: document.getElementById("sidebarBackdrop"),
@@ -43,6 +50,9 @@
         presenceUsers: [],
         profile: null,
         groups: [],
+        notifications: [],
+        unreadNotifications: 0,
+        notificationsOpen: false,
         activeThread: null,
         initialThread: null,
         groupSubscription: null,
@@ -58,6 +68,8 @@
         setSidebarOpen(false);
         applyTheme(config.currentTheme || "aurora", false);
         bindEvents();
+        renderNotifications();
+        syncComposerLayout();
         connectSocket();
         refreshData();
     }
@@ -146,15 +158,44 @@
             });
         }
 
+        if (refs.notificationToggle) {
+            refs.notificationToggle.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleNotificationsPanel();
+            });
+        }
+
+        if (refs.notificationPanel) {
+            refs.notificationPanel.addEventListener("click", function (event) {
+                event.stopPropagation();
+            });
+        }
+
+        document.addEventListener("click", function (event) {
+            if (!state.notificationsOpen) {
+                return;
+            }
+
+            if (!refs.topbarTools || refs.topbarTools.contains(event.target)) {
+                return;
+            }
+
+            closeNotificationsPanel();
+        });
+
         document.addEventListener("keydown", function (event) {
             if (event.key === "Escape") {
                 setSidebarOpen(false);
+                closeNotificationsPanel();
             }
         });
 
         window.addEventListener("beforeunload", function () {
             disconnectSocket();
         });
+
+        window.addEventListener("resize", syncComposerLayout);
     }
 
     function refreshData() {
@@ -193,6 +234,11 @@
 
             stompClient.subscribe("/user/queue/errors", function (payload) {
                 alert(payload.body || "Gửi tin nhắn thất bại.");
+            });
+
+            stompClient.subscribe("/user/queue/notifications", function (payload) {
+                const notification = JSON.parse(payload.body || "{}");
+                handleNotificationIncoming(notification);
             });
 
             if (state.activeThread && state.activeThread.type === "group") {
@@ -738,6 +784,18 @@
         refs.messageInput.style.height = "auto";
         const nextHeight = Math.min(refs.messageInput.scrollHeight, 150);
         refs.messageInput.style.height = Math.max(54, nextHeight) + "px";
+        syncComposerLayout();
+    }
+
+    function syncComposerLayout() {
+        if (!refs.messages || !refs.composerShell) {
+            return;
+        }
+
+        const composerHeight = Math.ceil(refs.composerShell.getBoundingClientRect().height);
+        if (composerHeight > 0) {
+            refs.messages.style.setProperty("--composer-height", composerHeight + "px");
+        }
     }
 
     function sendMessage() {
@@ -774,6 +832,208 @@
         refs.messageInput.value = "";
         autoResizeComposer();
         clearAttachment();
+    }
+
+    function handleNotificationIncoming(payload) {
+        const notification = normalizeNotification(payload);
+        state.notifications.unshift(notification);
+
+        if (state.notifications.length > 80) {
+            state.notifications = state.notifications.slice(0, 80);
+        }
+
+        const shouldMuteInActiveThread = isNotificationInCurrentThread(notification);
+        if (!state.notificationsOpen && !shouldMuteInActiveThread) {
+            state.unreadNotifications += 1;
+            showNotificationToast(notification);
+        }
+
+        renderNotifications();
+    }
+
+    function normalizeNotification(payload) {
+        const raw = payload || {};
+        const type = String(raw.type || "INFO").trim().toUpperCase();
+        return {
+            type: type || "INFO",
+            title: String(raw.title || defaultNotificationTitle(type)).trim(),
+            message: String(raw.message || "Ban co thong bao moi.").trim(),
+            actorUsername: String(raw.actorUsername || "").trim(),
+            groupCode: String(raw.groupCode || "").trim(),
+            createdAt: raw.createdAt || new Date().toISOString()
+        };
+    }
+
+    function defaultNotificationTitle(type) {
+        const normalized = String(type || "").toUpperCase();
+        if (normalized === "PRIVATE_MESSAGE") {
+            return "Tin nhan moi";
+        }
+
+        if (normalized === "GROUP_MESSAGE") {
+            return "Tin nhan nhom moi";
+        }
+
+        if (normalized === "FRIEND_REQUEST") {
+            return "Yeu cau ket ban";
+        }
+
+        if (normalized === "FRIEND_REQUEST_APPROVED") {
+            return "Ket ban thanh cong";
+        }
+
+        if (normalized === "GROUP_JOIN_REQUEST") {
+            return "Yeu cau vao nhom";
+        }
+
+        if (normalized === "GROUP_JOIN_APPROVED") {
+            return "Yeu cau vao nhom duoc duyet";
+        }
+
+        if (normalized === "GROUP_INVITE") {
+            return "Loi moi vao nhom";
+        }
+
+        return "Thong bao";
+    }
+
+    function renderNotifications() {
+        if (!refs.notificationList) {
+            return;
+        }
+
+        refs.notificationList.innerHTML = "";
+
+        if (!state.notifications.length) {
+            const emptyItem = document.createElement("li");
+            emptyItem.className = "empty-item";
+            emptyItem.textContent = "Chua co thong bao nao.";
+            refs.notificationList.appendChild(emptyItem);
+            updateNotificationBadge();
+            return;
+        }
+
+        state.notifications.slice(0, 30).forEach(function (item) {
+            const row = document.createElement("li");
+            row.className = "notification-item " + toNotificationClass(item.type);
+
+            const title = document.createElement("p");
+            title.className = "notification-item-title";
+            title.textContent = item.title;
+
+            const message = document.createElement("p");
+            message.className = "notification-item-message";
+            message.textContent = item.message;
+
+            const meta = document.createElement("p");
+            meta.className = "notification-item-meta";
+            meta.textContent = formatTime(item.createdAt);
+
+            row.appendChild(title);
+            row.appendChild(message);
+            row.appendChild(meta);
+            refs.notificationList.appendChild(row);
+        });
+
+        updateNotificationBadge();
+    }
+
+    function toNotificationClass(type) {
+        return String(type || "info").toLowerCase().replace(/_/g, "-");
+    }
+
+    function updateNotificationBadge() {
+        if (!refs.notificationBadge) {
+            return;
+        }
+
+        if (state.unreadNotifications <= 0) {
+            refs.notificationBadge.classList.add("hidden-panel");
+            refs.notificationBadge.textContent = "0";
+            return;
+        }
+
+        refs.notificationBadge.classList.remove("hidden-panel");
+        refs.notificationBadge.textContent = state.unreadNotifications > 99 ? "99+" : String(state.unreadNotifications);
+    }
+
+    function toggleNotificationsPanel() {
+        if (state.notificationsOpen) {
+            closeNotificationsPanel();
+            return;
+        }
+
+        state.notificationsOpen = true;
+        state.unreadNotifications = 0;
+
+        if (refs.notificationPanel) {
+            refs.notificationPanel.classList.remove("hidden-panel");
+        }
+
+        if (refs.notificationToggle) {
+            refs.notificationToggle.setAttribute("aria-expanded", "true");
+        }
+
+        updateNotificationBadge();
+    }
+
+    function closeNotificationsPanel() {
+        state.notificationsOpen = false;
+
+        if (refs.notificationPanel) {
+            refs.notificationPanel.classList.add("hidden-panel");
+        }
+
+        if (refs.notificationToggle) {
+            refs.notificationToggle.setAttribute("aria-expanded", "false");
+        }
+    }
+
+    function isNotificationInCurrentThread(notification) {
+        if (!state.activeThread || !notification) {
+            return false;
+        }
+
+        if (notification.type === "PRIVATE_MESSAGE") {
+            return state.activeThread.type === "direct"
+                    && notification.actorUsername
+                    && state.activeThread.id === notification.actorUsername;
+        }
+
+        if (notification.type === "GROUP_MESSAGE") {
+            return state.activeThread.type === "group"
+                    && notification.groupCode
+                    && state.activeThread.id === notification.groupCode;
+        }
+
+        return false;
+    }
+
+    function showNotificationToast(notification) {
+        if (!refs.notificationToasts || !notification) {
+            return;
+        }
+
+        const toast = document.createElement("article");
+        toast.className = "notification-toast";
+
+        const title = document.createElement("p");
+        title.className = "notification-toast-title";
+        title.textContent = notification.title;
+
+        const message = document.createElement("p");
+        message.className = "notification-toast-message";
+        message.textContent = notification.message;
+
+        toast.appendChild(title);
+        toast.appendChild(message);
+        refs.notificationToasts.appendChild(toast);
+
+        window.setTimeout(function () {
+            if (toast && toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 4600);
     }
 
     function handlePrivateIncoming(message) {
@@ -1028,10 +1288,12 @@
 
         if (!state.pendingAttachment) {
             refs.attachmentPreview.textContent = "";
+            syncComposerLayout();
             return;
         }
 
         refs.attachmentPreview.textContent = "Đã chọn: " + state.pendingAttachment.fileName;
+        syncComposerLayout();
     }
 
     function clearAttachment() {

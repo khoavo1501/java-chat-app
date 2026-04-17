@@ -1,11 +1,11 @@
-FROM maven:3.9.9-eclipse-temurin-11 AS builder
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
 
 WORKDIR /workspace
 COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:11-jre
+FROM eclipse-temurin:17-jre
 
 LABEL maintainer="MiniMax Agent"
 LABEL description="Java Chat App Spring Boot with MongoDB"

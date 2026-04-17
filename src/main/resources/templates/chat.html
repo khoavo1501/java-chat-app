@@ -21,6 +21,21 @@
             <p class="current-user" id="currentUser" th:text="${currentUser}"></p>
             <span class="status-dot" aria-hidden="true"></span>
         </div>
+
+        <div id="topbarTools" class="app-topbar-tools">
+            <button id="notificationToggle" type="button" class="ghost-button notification-toggle" aria-expanded="false" aria-controls="notificationPanel">
+                Thông báo
+                <span id="notificationBadge" class="notification-badge hidden-panel">0</span>
+            </button>
+
+            <section id="notificationPanel" class="notification-panel hidden-panel" aria-label="Danh sách thông báo">
+                <header class="notification-panel-header">
+                    <p class="muted">Thông báo</p>
+                    <p class="notification-panel-subtitle">Sự kiện mới nhất</p>
+                </header>
+                <ul id="notificationList" class="stack-list notification-list"></ul>
+            </section>
+        </div>
     </header>
 
     <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
@@ -30,7 +45,7 @@
             <nav class="sidebar-nav">
                 <a class="nav-link" th:href="@{/profile}">Cá nhân hóa</a>
                 <a class="nav-link" th:href="@{/groups}">Quản lý nhóm</a>
-                <a th:if="${isAdmin}" class="nav-link" th:href="@{/admin}">Admin</a>
+                <a th:if="${isAdmin}" class="nav-link" th:href="@{/admin/dashboard}">Admin</a>
             </nav>
 
             <div class="sidebar-section">
@@ -96,6 +111,8 @@
         </section>
     </div>
 </div>
+
+<div id="notificationToasts" class="notification-toast-stack" aria-live="polite" aria-atomic="true"></div>
 
 <script th:inline="javascript">
     window.chatConfig = {

@@ -2,8 +2,10 @@ package com.chat.service;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -19,10 +21,14 @@ public class GroupService {
 
     private final GroupRoomRepository groupRoomRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
 
-    public GroupService(GroupRoomRepository groupRoomRepository, UserService userService) {
+    public GroupService(GroupRoomRepository groupRoomRepository,
+            UserService userService,
+            NotificationService notificationService) {
         this.groupRoomRepository = groupRoomRepository;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     public GroupResponse createGroup(String ownerUsername, String rawName, boolean autoApproveJoin) {
@@ -57,7 +63,19 @@ public class GroupService {
         }
 
         groupRoom.touchForUpdate();
-        return toResponse(groupRoomRepository.save(groupRoom));
+        GroupRoom saved = groupRoomRepository.save(groupRoom);
+
+        if (!saved.isAutoApproveJoin() && !saved.getOwnerUsername().equals(cleanUsername)) {
+            notificationService.sendToUser(
+                    saved.getOwnerUsername(),
+                    "GROUP_JOIN_REQUEST",
+                    "Yeu cau vao nhom moi",
+                    cleanUsername + " dang yeu cau tham gia nhom " + saved.getName() + ".",
+                    cleanUsername,
+                    saved.getGroupCode());
+        }
+
+        return toResponse(saved);
     }
 
     public GroupResponse inviteMember(String actorUsername, String groupCode, String invitedUsername) {
@@ -82,7 +100,19 @@ public class GroupService {
         }
 
         groupRoom.touchForUpdate();
-        return toResponse(groupRoomRepository.save(groupRoom));
+        GroupRoom saved = groupRoomRepository.save(groupRoom);
+
+        notificationService.sendToUser(
+                invited,
+                "GROUP_INVITE",
+                "Loi moi vao nhom",
+                groupRoom.isAutoApproveJoin()
+                        ? "Ban da duoc them vao nhom " + saved.getName() + " boi " + actor + "."
+                        : actor + " da moi ban vao nhom " + saved.getName() + ".",
+                actor,
+                saved.getGroupCode());
+
+        return toResponse(saved);
     }
 
     public GroupResponse approveMember(String actorUsername, String groupCode, String username) {
@@ -96,7 +126,20 @@ public class GroupService {
 
         groupRoom.addMember(cleanUsername);
         groupRoom.touchForUpdate();
-        return toResponse(groupRoomRepository.save(groupRoom));
+        GroupRoom saved = groupRoomRepository.save(groupRoom);
+
+        String actor = normalizeUsername(actorUsername);
+        if (!cleanUsername.equals(actor)) {
+            notificationService.sendToUser(
+                    cleanUsername,
+                    "GROUP_JOIN_APPROVED",
+                    "Yeu cau vao nhom duoc duyet",
+                    actor + " da duyet ban vao nhom " + saved.getName() + ".",
+                    actor,
+                    saved.getGroupCode());
+        }
+
+        return toResponse(saved);
     }
 
     public GroupResponse toggleAutoApprove(String actorUsername, String groupCode, boolean autoApproveJoin) {
@@ -116,6 +159,42 @@ public class GroupService {
 
     public GroupResponse getGroup(String groupCode) {
         return toResponse(requireGroup(groupCode));
+    }
+
+    public List<String> getMemberUsernames(String groupCode) {
+        return new ArrayList<>(requireGroup(groupCode).getMemberUsernames());
+    }
+
+    public List<GroupResponse> listAllGroups() {
+        return groupRoomRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparing(GroupRoom::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public GroupResponse toggleAutoApproveAsAdmin(String groupCode, boolean autoApproveJoin) {
+        GroupRoom groupRoom = requireGroup(groupCode);
+        groupRoom.setAutoApproveJoin(autoApproveJoin);
+        groupRoom.touchForUpdate();
+        return toResponse(groupRoomRepository.save(groupRoom));
+    }
+
+    public void deleteGroupAsAdmin(String groupCode) {
+        GroupRoom groupRoom = requireGroup(groupCode);
+        groupRoomRepository.delete(groupRoom);
+    }
+
+    public long countAllGroups() {
+        return groupRoomRepository.count();
+    }
+
+    public long countPendingJoinRequests() {
+        return groupRoomRepository.findAll()
+                .stream()
+                .mapToLong(group -> group.getPendingUsernames().size())
+                .sum();
     }
 
     public void requireMember(String username, String groupCode) {

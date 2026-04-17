@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cổng Quản Trị | Realtime Chat</title>
+    <title>Dashboard Quản Trị | Realtime Chat</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body class="admin-page" th:attr="data-theme=${currentTheme}">
@@ -12,8 +12,8 @@
     <header class="admin-header workspace-header">
         <div>
             <p class="muted">Cổng quản trị</p>
-            <h1>Quản lý người dùng</h1>
-            <p class="admin-subtitle">Duyệt quyền, đặt lại giao diện và buộc người dùng ngoại tuyến khi cần.</p>
+            <h1>Dashboard quản lý</h1>
+            <p class="admin-subtitle">Tổng quan người dùng, nhóm và trạng thái hoạt động toàn hệ thống.</p>
         </div>
         <div class="admin-actions">
             <a class="ghost-button" th:href="@{/chat}">Trở lại chat</a>
@@ -30,22 +30,31 @@
         <a class="nav-link" th:classappend="${currentPage == 'groups'} ? ' active'" th:href="@{/admin/groups}">Nhóm</a>
     </nav>
 
-    <section class="admin-panel workspace-card">
-        <div class="admin-toolbar">
-            <input id="adminSearch" class="sidebar-input" type="search" placeholder="Tìm người dùng...">
-            <span class="admin-note">Danh sách chỉ hiển thị trong cổng quản trị.</span>
-        </div>
-        <div id="adminUsers" class="admin-grid"></div>
+    <section class="workspace-grid admin-dashboard-grid">
+        <article class="workspace-card admin-stats-card">
+            <h2>Số liệu nhanh</h2>
+            <div id="adminStats" class="admin-stats-grid"></div>
+        </article>
+
+        <article class="workspace-card admin-overview-card">
+            <h2>Người dùng đang hoạt động</h2>
+            <ul id="adminOnlineUsers" class="stack-list"></ul>
+        </article>
+
+        <article class="workspace-card admin-overview-card">
+            <h2>Nhóm mới gần đây</h2>
+            <ul id="adminRecentGroups" class="stack-list"></ul>
+        </article>
     </section>
 </main>
 
 <script th:inline="javascript">
-    window.adminConfig = {
+    window.adminDashboardConfig = {
         contextPath: /*[[@{/}]]*/ '/',
         csrfHeader: /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN',
         csrfToken: /*[[${_csrf.token}]]*/ ''
     };
 </script>
-<script th:src="@{/js/admin.js}"></script>
+<script th:src="@{/js/admin-dashboard.js}"></script>
 </body>
 </html>

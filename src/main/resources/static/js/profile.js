@@ -81,7 +81,6 @@
 
         refs.profileInfo.appendChild(createInfoLine("Tên đăng nhập", state.profile.username || "-"));
         refs.profileInfo.appendChild(createInfoLine("Giao diện", state.profile.theme || "aurora"));
-        refs.profileInfo.appendChild(createInfoLine("Vai trò", (state.profile.roles || []).join(", ") || "USER"));
         refs.profileInfo.appendChild(createInfoLine("Bạn bè", String((state.profile.friends || []).length)));
 
         if (refs.themeSelector) {

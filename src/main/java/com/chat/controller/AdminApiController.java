@@ -5,6 +5,7 @@ import java.util.List;
 import javax.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,8 +14,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.chat.dto.AdminStatsResponse;
+import com.chat.dto.GroupAutoApproveRequest;
+import com.chat.dto.GroupResponse;
 import com.chat.dto.ThemeUpdateRequest;
 import com.chat.dto.UserProfileResponse;
+import com.chat.repository.ChatMessageRepository;
+import com.chat.service.GroupService;
 import com.chat.service.PresenceService;
 import com.chat.service.UserService;
 
@@ -24,15 +30,52 @@ public class AdminApiController {
 
     private final UserService userService;
     private final PresenceService presenceService;
+    private final GroupService groupService;
+    private final ChatMessageRepository chatMessageRepository;
 
-    public AdminApiController(UserService userService, PresenceService presenceService) {
+    public AdminApiController(UserService userService,
+            PresenceService presenceService,
+            GroupService groupService,
+            ChatMessageRepository chatMessageRepository) {
         this.userService = userService;
         this.presenceService = presenceService;
+        this.groupService = groupService;
+        this.chatMessageRepository = chatMessageRepository;
+    }
+
+    @GetMapping("/stats")
+    public AdminStatsResponse stats() {
+        AdminStatsResponse response = new AdminStatsResponse();
+        response.setTotalUsers(userService.countAllUsers());
+        response.setOnlineUsers(userService.countOnlineUsers());
+        response.setAdminUsers(userService.countAdminUsers());
+        response.setTotalGroups(groupService.countAllGroups());
+        response.setPendingGroupJoinRequests(groupService.countPendingJoinRequests());
+        response.setPendingFriendRequests(userService.countPendingFriendRequests());
+        response.setTotalMessages(chatMessageRepository.count());
+        return response;
     }
 
     @GetMapping("/users")
     public List<UserProfileResponse> listUsers() {
         return userService.listAllProfiles();
+    }
+
+    @GetMapping("/groups")
+    public List<GroupResponse> listGroups() {
+        return groupService.listAllGroups();
+    }
+
+    @PatchMapping("/groups/{groupCode}/auto-approve")
+    public GroupResponse toggleGroupAutoApprove(@PathVariable("groupCode") String groupCode,
+            @Valid @RequestBody GroupAutoApproveRequest request) {
+        return groupService.toggleAutoApproveAsAdmin(groupCode, request.isAutoApproveJoin());
+    }
+
+    @DeleteMapping("/groups/{groupCode}")
+    public ResponseEntity<Void> deleteGroup(@PathVariable("groupCode") String groupCode) {
+        groupService.deleteGroupAsAdmin(groupCode);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/users/{username}/role/{role}")

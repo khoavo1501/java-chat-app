@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -47,7 +48,10 @@ public class SecurityConfig {
                 .and()
                 .formLogin()
                 .loginPage("/login")
-                .defaultSuccessUrl("/chat", true)
+                .successHandler((request, response, authentication) -> {
+                    String target = hasAdminRole(authentication) ? "/admin/dashboard" : "/chat";
+                    response.sendRedirect(request.getContextPath() + target);
+                })
                 .permitAll()
                 .and()
                 .logout()
@@ -61,5 +65,12 @@ public class SecurityConfig {
                 .ignoringAntMatchers("/ws/**");
 
         return http.build();
+    }
+
+    private boolean hasAdminRole(Authentication authentication) {
+        return authentication != null
+                && authentication.getAuthorities()
+                        .stream()
+                        .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 }

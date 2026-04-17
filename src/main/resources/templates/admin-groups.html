@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cổng Quản Trị | Realtime Chat</title>
+    <title>Quản Lý Nhóm | Realtime Chat</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body class="admin-page" th:attr="data-theme=${currentTheme}">
@@ -12,8 +12,8 @@
     <header class="admin-header workspace-header">
         <div>
             <p class="muted">Cổng quản trị</p>
-            <h1>Quản lý người dùng</h1>
-            <p class="admin-subtitle">Duyệt quyền, đặt lại giao diện và buộc người dùng ngoại tuyến khi cần.</p>
+            <h1>Quản lý nhóm</h1>
+            <p class="admin-subtitle">Theo dõi nhóm, bật/tắt tự động duyệt và xóa nhóm khi cần.</p>
         </div>
         <div class="admin-actions">
             <a class="ghost-button" th:href="@{/chat}">Trở lại chat</a>
@@ -32,20 +32,20 @@
 
     <section class="admin-panel workspace-card">
         <div class="admin-toolbar">
-            <input id="adminSearch" class="sidebar-input" type="search" placeholder="Tìm người dùng...">
-            <span class="admin-note">Danh sách chỉ hiển thị trong cổng quản trị.</span>
+            <input id="adminGroupSearch" class="sidebar-input" type="search" placeholder="Tìm theo tên nhóm hoặc mã nhóm...">
+            <span class="admin-note">Trang này chỉ dành cho người quản trị hệ thống.</span>
         </div>
-        <div id="adminUsers" class="admin-grid"></div>
+        <div id="adminGroups" class="admin-grid"></div>
     </section>
 </main>
 
 <script th:inline="javascript">
-    window.adminConfig = {
+    window.adminGroupsConfig = {
         contextPath: /*[[@{/}]]*/ '/',
         csrfHeader: /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN',
         csrfToken: /*[[${_csrf.token}]]*/ ''
     };
 </script>
-<script th:src="@{/js/admin.js}"></script>
+<script th:src="@{/js/admin-groups.js}"></script>
 </body>
 </html>
