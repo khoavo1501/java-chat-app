@@ -10,7 +10,7 @@ Tai lieu nay huong dan chay ung dung chat de 2 may tinh trong cung mang LAN co t
 
 ## 2. Tong quan
 
-- May A: chay Tomcat 9 va deploy ung dung.
+- May A: chay ung dung Spring Boot va MongoDB.
 - May B: mo trinh duyet truy cap vao IP cua May A.
 
 Luot truy cap se co dang:
@@ -27,7 +27,7 @@ Vi du:
 cd /d/WorkSpace/225/225_TLTM/project/ChatRealtime/java-chat-app
 ```
 
-### Buoc 2: Build file WAR
+### Buoc 2: Build file JAR
 
 ```bash
 mvn clean package -DskipTests
@@ -35,25 +35,20 @@ mvn clean package -DskipTests
 
 Sau buoc nay se co file:
 
-- target/chat-app.war
+- target/java-chat-app-2.0.0.jar
 
-### Buoc 3: Tai Tomcat 9 local (neu chua co)
+### Buoc 3: Chay MongoDB local
 
 ```bash
-curl -fL "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.80/bin/apache-tomcat-9.0.80.zip" -o target/apache-tomcat-9.0.80.zip
-powershell -NoProfile -Command "Expand-Archive -Path 'target/apache-tomcat-9.0.80.zip' -DestinationPath 'target' -Force"
+docker run --name java-chat-mongo -p 27017:27017 -d mongo:6.0
 ```
 
-### Buoc 4: Deploy WAR vao Tomcat 9
+Neu da cai MongoDB local, co the bo qua buoc nay.
+
+### Buoc 4: Chay ung dung
 
 ```bash
-cp target/chat-app.war target/apache-tomcat-9.0.80/webapps/chat.war
-```
-
-### Buoc 5: Chay Tomcat 9
-
-```bash
-target/apache-tomcat-9.0.80/bin/catalina.sh run
+java -jar target/java-chat-app-2.0.0.jar
 ```
 
 Neu thay log startup thanh cong, server dang chay o cong 8080.
@@ -74,7 +69,7 @@ Tim dong IPv4 Address, vi du:
 
 Mo trinh duyet va vao:
 
-- http://192.168.1.25:8080/chat/login
+- http://192.168.1.25:8080/login
 
 Thay 192.168.1.25 bang IP thuc te cua May A.
 
@@ -85,7 +80,7 @@ Dang nhap voi nickname bat ky de vao phong chat.
 Tu May B, co the test truoc bang:
 
 ```bash
-curl -I http://IP_MAY_A:8080/chat/login
+curl -I http://IP_MAY_A:8080/login
 ```
 
 Neu tra ve HTTP 200 la truy cap duoc.
@@ -111,22 +106,16 @@ Sau do thu truy cap lai tu May B.
 
 ### Loi cong 8080 da duoc su dung
 
-Doi cong trong file:
-
-- target/apache-tomcat-9.0.80/conf/server.xml
-
-Sau do doi URL truy cap theo cong moi.
+Doi cong trong file `src/main/resources/application.properties` hoac truyen `server.port` khi chay jar.
 
 ### Loi 500 khi vao /chat
 
-Build lai va deploy lai WAR:
+Kiem tra da chay MongoDB chua va app co ket noi duoc toi `mongodb://localhost:27017/java_chat_app` khong.
 
-```bash
-mvn package -DskipTests
-cp target/chat-app.war target/apache-tomcat-9.0.80/webapps/chat.war
-```
+### Loi dang nhap admin portal
 
-Neu can, dung Tomcat roi chay lai.
+- Dam bao dang nhap bang tai khoan `admin` / `admin123`
+- Chi role ADMIN moi vao duoc /admin
 
 ## 9. Dung server
 

@@ -1,56 +1,57 @@
 package com.chat.entity;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
-import javax.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "users")
+@Document("users")
 public class UserAccount {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Indexed(unique = true)
     private String username;
 
-    @Column(nullable = false, length = 100)
     private String passwordHash;
 
-    @Column(nullable = false)
     private boolean online;
 
-    @Column(nullable = false, updatable = false)
+    private String theme;
+
+    private Set<String> roles = new LinkedHashSet<>();
+
+    private Set<String> friends = new LinkedHashSet<>();
+
+    private Set<String> incomingFriendRequests = new LinkedHashSet<>();
+
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    public void onCreate() {
+    public void touchForCreate() {
         LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
+
+        if (this.createdAt == null) {
+            this.createdAt = now;
+        }
+
         this.updatedAt = now;
     }
 
-    @PreUpdate
-    public void onUpdate() {
+    public void touchForUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -78,6 +79,47 @@ public class UserAccount {
         this.online = online;
     }
 
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
+    }
+
+    public Set<String> getRoles() {
+        if (roles == null) {
+            roles = new LinkedHashSet<>();
+        }
+        return roles;
+    }
+
+    public void setRoles(Set<String> roles) {
+        this.roles = roles == null ? new LinkedHashSet<>() : roles;
+    }
+
+    public Set<String> getFriends() {
+        if (friends == null) {
+            friends = new LinkedHashSet<>();
+        }
+        return friends;
+    }
+
+    public void setFriends(Set<String> friends) {
+        this.friends = friends == null ? new LinkedHashSet<>() : friends;
+    }
+
+    public Set<String> getIncomingFriendRequests() {
+        if (incomingFriendRequests == null) {
+            incomingFriendRequests = new LinkedHashSet<>();
+        }
+        return incomingFriendRequests;
+    }
+
+    public void setIncomingFriendRequests(Set<String> incomingFriendRequests) {
+        this.incomingFriendRequests = incomingFriendRequests == null ? new LinkedHashSet<>() : incomingFriendRequests;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -92,5 +134,45 @@ public class UserAccount {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public boolean hasRole(String role) {
+        return getRoles().contains(role);
+    }
+
+    public void addRole(String role) {
+        if (role != null && !role.trim().isEmpty()) {
+            getRoles().add(role.trim().toUpperCase());
+        }
+    }
+
+    public void removeRole(String role) {
+        if (role != null) {
+            getRoles().remove(role.trim().toUpperCase());
+        }
+    }
+
+    public void addFriend(String username) {
+        if (username != null && !username.trim().isEmpty()) {
+            getFriends().add(username.trim());
+        }
+    }
+
+    public void removeFriend(String username) {
+        if (username != null) {
+            getFriends().remove(username.trim());
+        }
+    }
+
+    public void addIncomingFriendRequest(String username) {
+        if (username != null && !username.trim().isEmpty()) {
+            getIncomingFriendRequests().add(username.trim());
+        }
+    }
+
+    public void removeIncomingFriendRequest(String username) {
+        if (username != null) {
+            getIncomingFriendRequests().remove(username.trim());
+        }
     }
 }

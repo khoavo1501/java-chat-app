@@ -1,5 +1,8 @@
 package com.chat.service;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,9 +26,14 @@ public class CustomUserDetailsService implements UserDetailsService {
         UserAccount userAccount = userAccountRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
+        Set<String> roles = userAccount.getRoles();
+        if (roles.isEmpty()) {
+            roles = Collections.singleton("USER");
+        }
+
         return User.withUsername(userAccount.getUsername())
                 .password(userAccount.getPasswordHash())
-                .roles("USER")
+                .roles(roles.toArray(new String[0]))
                 .build();
     }
 }

@@ -70,3 +70,4 @@ logs/
 .env
 .env.local
 .env.*.local
+data/chatdb.mv.db

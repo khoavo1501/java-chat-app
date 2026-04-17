@@ -3,33 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dang ky | Realtime Chat</title>
+    <title>Đăng ký | Realtime Chat</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body class="auth-page">
 <div class="grain"></div>
-<main class="auth-card">
-    <h1>Tao tai khoan</h1>
-    <p class="auth-subtitle">Dang ky username va password de su dung he thong</p>
+<main class="auth-shell">
+    <section class="auth-brand">
+        <p class="muted">Realtime Chat</p>
+        <h1>Tạo tài khoản mới trong vài giây</h1>
+        <p>Thiết lập tài khoản để bắt đầu trò chuyện riêng, quản lý nhóm và cá nhân hóa giao diện.</p>
+    </section>
 
-    <div class="notice notice-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+    <section class="auth-card">
+        <h2>Đăng ký</h2>
+        <p class="auth-subtitle">Điền thông tin cơ bản để bắt đầu sử dụng.</p>
 
-    <form th:action="@{/register}" method="post" class="auth-form">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <div class="notice notice-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
 
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" maxlength="30" required th:value="${username}">
+        <form th:action="@{/register}" method="post" class="auth-form">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" minlength="6" maxlength="72" required>
+            <label for="username">Tên đăng nhập</label>
+            <input id="username" name="username" type="text" maxlength="30" required th:value="${username}">
 
-        <button type="submit">Dang ky</button>
-    </form>
+            <label for="password">Mật khẩu</label>
+            <input id="password" name="password" type="password" minlength="6" maxlength="72" required>
 
-    <p class="auth-switch">
-        Da co tai khoan?
-        <a th:href="@{/login}">Dang nhap</a>
-    </p>
+            <button type="submit">Đăng ký</button>
+        </form>
+
+        <p class="auth-switch">
+            Đã có tài khoản?
+            <a th:href="@{/login}">Đăng nhập</a>
+        </p>
+    </section>
 </main>
 </body>
 </html>

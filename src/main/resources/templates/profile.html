@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cá Nhân Hóa | Realtime Chat</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="workspace-page" th:attr="data-theme=${currentTheme}">
+<div class="grain"></div>
+<main class="workspace-shell">
+    <header class="workspace-header profile-hero">
+        <div>
+            <p class="muted">Thiết lập tài khoản</p>
+            <h1>Cá nhân hóa và thông tin người dùng</h1>
+            <p class="workspace-subtitle">Quản lý giao diện, lời mời kết bạn và danh sách bạn bè.</p>
+        </div>
+        <div class="workspace-actions">
+            <a class="ghost-button" th:href="@{/chat}">Trở lại chat</a>
+            <a class="ghost-button" th:href="@{/groups}">Quản lý nhóm</a>
+            <a th:if="${isAdmin}" class="ghost-button" th:href="@{/admin}">Admin</a>
+            <form th:action="@{/logout}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="ghost-button">Đăng xuất</button>
+            </form>
+        </div>
+    </header>
+
+    <section class="workspace-grid profile-grid">
+        <article class="workspace-card profile-card-info">
+            <h2>Thông tin của bạn</h2>
+            <div id="profileInfo" class="stack-list"></div>
+            <label class="theme-picker profile-theme-picker">
+                <span>Giao diện hiện tại</span>
+                <select id="profileThemeSelector">
+                    <option value="aurora">Aurora</option>
+                    <option value="midnight">Midnight</option>
+                    <option value="sunrise">Sunrise</option>
+                    <option value="forest">Forest</option>
+                </select>
+            </label>
+        </article>
+
+        <article class="workspace-card profile-card-requests">
+            <h2>Yêu cầu kết bạn</h2>
+            <ul id="profileFriendRequests" class="stack-list"></ul>
+        </article>
+
+        <article class="workspace-card profile-card-friends">
+            <h2>Bạn bè hiện tại</h2>
+            <ul id="profileFriendList" class="stack-list"></ul>
+        </article>
+
+        <article class="workspace-card profile-card-search">
+            <h2>Tìm và kết bạn</h2>
+            <input id="profileUserSearch" class="sidebar-input" type="search" placeholder="Nhập tên để tìm...">
+            <ul id="profileUserList" class="stack-list"></ul>
+        </article>
+    </section>
+</main>
+
+<script th:inline="javascript">
+    window.profileConfig = {
+        currentUser: /*[[${currentUser}]]*/ '',
+        currentTheme: /*[[${currentTheme}]]*/ 'aurora',
+        contextPath: /*[[@{/}]]*/ '/',
+        csrfHeader: /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN',
+        csrfToken: /*[[${_csrf.token}]]*/ ''
+    };
+</script>
+<script th:src="@{/js/profile.js}"></script>
+</body>
+</html>

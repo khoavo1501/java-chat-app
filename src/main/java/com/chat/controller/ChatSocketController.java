@@ -10,6 +10,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import com.chat.dto.ChatMessageResponse;
+import com.chat.dto.GroupMessageRequest;
 import com.chat.dto.PrivateMessageRequest;
 import com.chat.service.ChatMessageService;
 
@@ -34,10 +35,34 @@ public class ChatSocketController {
             ChatMessageResponse saved = chatMessageService.savePrivateMessage(
                     principal.getName(),
                     request.getRecipient(),
-                    request.getContent());
+                    request.getContent(),
+                    request.getContentType(),
+                    request.getAttachmentUrl(),
+                    request.getAttachmentMimeType());
 
             simpMessagingTemplate.convertAndSendToUser(saved.getRecipient(), "/queue/messages", saved);
             simpMessagingTemplate.convertAndSendToUser(saved.getSender(), "/queue/messages", saved);
+        } catch (IllegalArgumentException ex) {
+            simpMessagingTemplate.convertAndSendToUser(principal.getName(), "/queue/errors", ex.getMessage());
+        }
+    }
+
+    @MessageMapping("/chat.group")
+    public void handleGroupMessage(@Valid @Payload GroupMessageRequest request, Principal principal) {
+        if (principal == null) {
+            return;
+        }
+
+        try {
+            ChatMessageResponse saved = chatMessageService.saveGroupMessage(
+                    principal.getName(),
+                    request.getGroupCode(),
+                    request.getContent(),
+                    request.getContentType(),
+                    request.getAttachmentUrl(),
+                    request.getAttachmentMimeType());
+
+            simpMessagingTemplate.convertAndSend("/topic/groups/" + saved.getGroupCode(), saved);
         } catch (IllegalArgumentException ex) {
             simpMessagingTemplate.convertAndSendToUser(principal.getName(), "/queue/errors", ex.getMessage());
         }

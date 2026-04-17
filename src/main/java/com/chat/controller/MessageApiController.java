@@ -33,4 +33,16 @@ public class MessageApiController {
 
         return chatMessageService.getConversation(principal.getName(), username);
     }
+
+    @GetMapping("/groups/{groupCode}")
+    public List<ChatMessageResponse> getGroupConversation(
+            @PathVariable("groupCode") String groupCode,
+            Principal principal) {
+
+        if (principal == null) {
+            return Collections.emptyList();
+        }
+
+        return chatMessageService.getGroupConversation(groupCode);
+    }
 }

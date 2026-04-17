@@ -1,11 +1,12 @@
 # Java Chat Realtime - Huong Dan Chay
 
-Ung dung hien tai da duoc nang cap sang Spring Boot, Spring Security, JPA, STOMP WebSocket va H2 database.
+Ung dung hien tai da duoc nang cap sang Spring Boot, Spring Security, MongoDB va STOMP WebSocket.
 
 ## 1) Yeu cau moi truong
 
 - JDK 11 tro len
 - Maven 3.6 tro len
+- MongoDB 6 tro len
 - Trinh duyet bat ky (Chrome, Edge, Firefox)
 
 Kiem tra nhanh:
@@ -33,12 +34,12 @@ Sau khi app khoi dong, truy cap:
 
 ## 4) Database va du lieu
 
-- App dung H2 file database tai thu muc data/chatdb
-- Lich su tin nhan duoc luu va se con sau khi restart
-- Mo H2 Console tai: http://localhost:8080/h2-console
-- JDBC URL: jdbc:h2:file:./data/chatdb;AUTO_SERVER=TRUE
-- User: sa
-- Password: de trong
+- App dung MongoDB, mac dinh ket noi toi `mongodb://localhost:27017/java_chat_app`
+- Neu chay Docker Compose, MongoDB duoc khoi tao cung container app
+- Lich su tin nhan, ban be, theme va group duoc luu trong MongoDB
+- Tai khoan admin mac dinh:
+	- Username: `admin`
+	- Password: `admin123`
 
 ## 5) Build file jar de deploy
 
@@ -68,8 +69,9 @@ Dung va xoa container:
 
 Ghi chu:
 
-- Da mount ./data vao /app/data de luu H2 database ben ngoai container.
+- Docker Compose cung cap MongoDB trong service `mongo`
 - Truy cap app tai http://localhost:8080/login
+- Admin portal o http://localhost:8080/admin
 
 ## 5.2) Deploy len Linux server bang systemd
 
@@ -130,6 +132,12 @@ Port 8080 dang bi chiem:
 Maven khong tai duoc dependency:
 
 	mvn -U clean package
+
+Khong ket noi duoc MongoDB:
+
+- Kiem tra MongoDB da chay chua
+- Neu chay local, dam bao `mongodb://localhost:27017/java_chat_app` truy cap duoc
+- Neu chay Docker, kiem tra service `mongo` trong `docker-compose.yml`
 
 Sai version Java:
 

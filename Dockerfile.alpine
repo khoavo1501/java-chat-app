@@ -1,10 +1,9 @@
 FROM eclipse-temurin:11-jre-alpine
 
 LABEL maintainer="MiniMax Agent"
-LABEL description="Java Chat App Spring Boot (Production)"
+LABEL description="Java Chat App Spring Boot with MongoDB (Production)"
 
 WORKDIR /app
-VOLUME ["/app/data"]
 
 # Build truoc bang: mvn clean package
 ARG JAR_FILE=target/java-chat-app-2.0.0.jar

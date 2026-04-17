@@ -3,11 +3,11 @@ package com.chat.dto;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
-public class PrivateMessageRequest {
+public class GroupMessageRequest {
 
     @NotBlank
-    @Size(max = 50)
-    private String recipient;
+    @Size(max = 32)
+    private String groupCode;
 
     private String content;
 
@@ -20,12 +20,12 @@ public class PrivateMessageRequest {
     @Size(max = 100)
     private String attachmentMimeType;
 
-    public String getRecipient() {
-        return recipient;
+    public String getGroupCode() {
+        return groupCode;
     }
 
-    public void setRecipient(String recipient) {
-        this.recipient = recipient;
+    public void setGroupCode(String groupCode) {
+        this.groupCode = groupCode;
     }
 
     public String getContent() {

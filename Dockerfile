@@ -8,13 +8,10 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:11-jre
 
 LABEL maintainer="MiniMax Agent"
-LABEL description="Java Chat App Spring Boot"
+LABEL description="Java Chat App Spring Boot with MongoDB"
 LABEL version="2.0.0"
 
 WORKDIR /app
-
-# H2 file database được lưu tại /app/data để có thể mount volume persist.
-VOLUME ["/app/data"]
 
 COPY --from=builder /workspace/target/java-chat-app-2.0.0.jar app.jar
 

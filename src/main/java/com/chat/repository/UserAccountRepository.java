@@ -3,11 +3,11 @@ package com.chat.repository;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
 import com.chat.entity.UserAccount;
 
-public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
+public interface UserAccountRepository extends MongoRepository<UserAccount, String> {
 
     Optional<UserAccount> findByUsername(String username);
 

@@ -2,48 +2,46 @@ package com.chat.entity;
 
 import java.time.LocalDateTime;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.PrePersist;
-import javax.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "chat_messages", indexes = {
-        @Index(name = "idx_sender_recipient", columnList = "sender_username,recipient_username"),
-        @Index(name = "idx_sent_at", columnList = "sent_at")
-})
+@Document("chat_messages")
 public class ChatMessage {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(name = "sender_username", nullable = false, length = 50)
+    @Indexed
     private String senderUsername;
 
-    @Column(name = "recipient_username", nullable = false, length = 50)
+    @Indexed
     private String recipientUsername;
 
-    @Column(nullable = false, length = 1000)
+    @Indexed
+    private String groupCode;
+
+    private String scope;
+
+    private String contentType;
+
     private String content;
 
-    @Column(name = "sent_at", nullable = false)
+    private String attachmentUrl;
+
+    private String attachmentMimeType;
+
     private LocalDateTime sentAt;
 
-    @PrePersist
-    public void onCreate() {
+    public void markSent() {
         this.sentAt = LocalDateTime.now();
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
@@ -63,12 +61,52 @@ public class ChatMessage {
         this.recipientUsername = recipientUsername;
     }
 
+    public String getGroupCode() {
+        return groupCode;
+    }
+
+    public void setGroupCode(String groupCode) {
+        this.groupCode = groupCode;
+    }
+
+    public String getScope() {
+        return scope;
+    }
+
+    public void setScope(String scope) {
+        this.scope = scope;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
     public String getContent() {
         return content;
     }
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getAttachmentUrl() {
+        return attachmentUrl;
+    }
+
+    public void setAttachmentUrl(String attachmentUrl) {
+        this.attachmentUrl = attachmentUrl;
+    }
+
+    public String getAttachmentMimeType() {
+        return attachmentMimeType;
+    }
+
+    public void setAttachmentMimeType(String attachmentMimeType) {
+        this.attachmentMimeType = attachmentMimeType;
     }
 
     public LocalDateTime getSentAt() {

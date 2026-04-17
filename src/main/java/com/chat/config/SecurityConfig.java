@@ -39,8 +39,9 @@ public class SecurityConfig {
 
         http.authenticationProvider(authenticationProvider)
                 .authorizeRequests()
-                .antMatchers("/login", "/register", "/css/**", "/js/**", "/ws/**", "/error", "/h2-console/**")
+                .antMatchers("/login", "/register", "/css/**", "/js/**", "/ws/**", "/error", "/favicon.ico")
                 .permitAll()
+                .antMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
                 .anyRequest()
                 .authenticated()
                 .and()
@@ -57,11 +58,7 @@ public class SecurityConfig {
                 .permitAll()
                 .and()
                 .csrf()
-                .ignoringAntMatchers("/ws/**", "/h2-console/**")
-                .and()
-                .headers()
-                .frameOptions()
-                .sameOrigin();
+                .ignoringAntMatchers("/ws/**");
 
         return http.build();
     }
